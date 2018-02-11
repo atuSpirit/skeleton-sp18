@@ -81,8 +81,35 @@ public class IntList {
      */
 
     public static IntList dcatenate(IntList A, IntList B) {
-        //TODO:  fill in method
-        return null;
+        if (A == null) {
+            A = B;
+        } else {
+            IntList endOfA = A;
+            while (endOfA.rest != null) {
+                endOfA = endOfA.rest;
+            }
+            endOfA.rest = B;
+        }
+
+        return A;
+    }
+
+    /**
+     * Returns a list consisting of the elements of A followed by the
+     * *  elements of B.  May modify items of A. Don't use 'new'.
+     */
+
+    public static IntList dcatenateR(IntList A, IntList B) {
+        if (A == null) {
+            return B;
+        }
+        if (A.rest == null) {
+            A.rest = B;
+            return A;
+        } else {
+            dcatenateR(A.rest, B);
+            return A;
+        }
     }
 
     /**
@@ -91,10 +118,39 @@ public class IntList {
      */
     public static IntList catenate(IntList A, IntList B) {
         //TODO:  fill in method
-        return null;
+        IntList newList = new IntList(A.first, null);
+        IntList ptrA = A.rest;
+        IntList ptrB = B;
+        IntList ptr = newList;
+        while (ptrA != null) {
+            ptr.rest = new IntList(ptrA.first, null);
+            ptrA = ptrA.rest;
+            ptr = ptr.rest;
+        }
+        while (ptrB != null) {
+            ptr.rest = new IntList(ptrB.first, null);
+            ptrB = ptrB.rest;
+            ptr = ptr.rest;
+        }
+        return newList;
     }
 
-
+    /**
+     * Returns a list consisting of the elements of A followed by the
+     * * elements of B.  May NOT modify items of A.  Use 'new'.
+     * * Implement recursively.
+     */
+    public static IntList catenateR(IntList A, IntList B) {
+        if (null == A && null == B) {
+            return null;
+        }
+        if (null == A) {
+            IntList l = new IntList(B.first, catenateR(A, B.rest));
+            return l;
+        }
+        IntList l = new IntList(A.first, catenateR(A.rest, B));
+        return l;
+    }
 
 
 
