@@ -32,7 +32,7 @@ public class ArrayDeque<T> {
         T[] newArray = (T[]) new Object[capacity];
         int index = nextFirst;
         int i = 0;
-        while ( i < size) {
+        while (i < size) {
             index = addOne(index);
             newArray[i] = item[index];
             item[index] = null;

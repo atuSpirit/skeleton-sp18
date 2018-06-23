@@ -3,7 +3,8 @@ public class ArrayDequeTest {
 
     public static boolean checkEmpty(boolean expected, boolean actual) {
         if (actual != expected) {
-            System.out.println("IsEmpty() is expected to be " + expected + " but the actural is " + actual);
+            System.out.println("IsEmpty() is expected to be " + expected
+                    + " but the actural is " + actual);
             return false;
         }
         return true;
