@@ -38,7 +38,7 @@ public class LinkedListDequeTest {
 		System.out.println("Make sure to uncomment the lines below (and delete this print statement).");
 		//*
 		LinkedListDeque<String> lld1 = new LinkedListDeque<String>();
-
+//        ArrayDeque<String> lld1 = new ArrayDeque<String>();
 		boolean passed = checkEmpty(true, lld1.isEmpty());
 
 		lld1.addFirst("front");
@@ -69,7 +69,8 @@ public class LinkedListDequeTest {
 		System.out.println("Make sure to uncomment the lines below (and delete this print statement).");
 		//*
 		LinkedListDeque<Integer> lld1 = new LinkedListDeque<Integer>();
-		// should be empty 
+//		ArrayDeque<Integer> lld1 = new ArrayDeque<Integer>();
+		// should be empty s
 		boolean passed = checkEmpty(true, lld1.isEmpty());
 
 		lld1.addFirst(10);
