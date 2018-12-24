@@ -1,7 +1,7 @@
 package byog.lab5;
 
 
-import javafx.geometry.Pos;
+//import javafx.geometry.Pos;
 
 public class Position implements Comparable<Position>  {
     int x;
