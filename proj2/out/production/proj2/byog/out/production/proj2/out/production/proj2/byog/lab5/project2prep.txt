@@ -6,16 +6,11 @@ A:
 -----
 Q: If you were to start working on world generation, what kind of method would you think of writing first? 
 Think back to the lab and the process used to eventually get to tesselating hexagons.
-generateRoom(Position start, int width, int length)
-generateHallway(Position start, char direction, int length)
-fillFloor()
+
 A:
 
 -----
 Q: What distinguishes a hallway from a room? How are they similar?
-hallway must connect to open place;
-hallway must have width 1
-room has walls.  If a position in a wall is used as the start of a hallway, it will be substituted as floor
 
 A:
 
