@@ -9,9 +9,8 @@ import java.util.Random;
 
 /**
  *  Generate a world randomly according to a random seed.
- *  Dec 16. Change the world generation algorithm to generate
- *  room and hallway alternatively. The hallway and room are
- *  connected.
+ *  Generate the room and hallway alternatively. The hallway and room are
+ *  connected. The hallway could be L shape.
  * @author Hao Lin
  *  */
 public class WorldGenerator {
@@ -34,6 +33,7 @@ public class WorldGenerator {
      * @param start The leftBottom corner of the room.
      * @param width The width of the room
      * @param length The length of the room
+     * @return room The room generated.
      */
     private Room generateRoom(Position start, int width, int length) {
         /* If the room is out of the boundary of canvas, fit it in */
@@ -145,8 +145,8 @@ public class WorldGenerator {
         } else {
             isLShape = RandomUtils.uniform(RANDOM, 2);
         }
-         //for debugging
-        if (0 == isLShape) {    //should be 0 == isLShape, changed for temporarily debugging
+
+        if (0 == isLShape) {
             end = getHallwayEnd(start, direction, length);
         } else {
             //generate middle position and L shape.
@@ -232,7 +232,6 @@ public class WorldGenerator {
                 world[xCoord][yCoord] = TETile.colorVariant(tile, 32, 32, 32, RANDOM);
             }
         }
-
     }
 
     /* Helper function to increment hallway position by one line.
@@ -245,7 +244,7 @@ public class WorldGenerator {
         if ((direction == 0) || (direction == 2)) {
             xCoord++;
         } else {
-            yCoord++;
+            yCoord--;
         }
         return new Position(xCoord, yCoord);
     }
@@ -260,7 +259,7 @@ public class WorldGenerator {
         if ((direction == 0) || (direction == 2)) {
             xCoord--;
         } else {
-            yCoord--;
+            yCoord++;
         }
 
         return new Position(xCoord, yCoord);
@@ -269,45 +268,22 @@ public class WorldGenerator {
     /* Given the hallway object which denoting the middle line,
      * draw the three lines of hallway.
      */
-    private void drawHallway(Hallway hallway) {
+    private void drawDirectHallway(Hallway hallway) {
         Position floorStart = hallway.getStart();
-        Position floorMiddle = hallway.getMiddle();
         Position floorEnd = hallway.getEnd();
 
+        int direction = hallway.getDirection();
+        drawLine(floorStart, floorEnd, Tileset.FLOOR);
 
-        if (hallway.getMiddle() == null) {
-            int direction = hallway.getDirection();
-            drawLine(floorStart, floorEnd, Tileset.FLOOR);
+        Position start = minusPosition(floorStart, direction);
+        Position end = minusPosition(floorEnd, direction);
+        drawLine(start, end, Tileset.WALL);
 
-            Position start = minusPosition(floorStart, direction);
-            Position end = minusPosition(floorEnd, direction);
-            drawLine(start, end, Tileset.WALL);
-
-            start = plusPosition(floorStart, direction);
-            end = plusPosition(floorEnd, direction);
-            drawLine(start, end, Tileset.WALL);
-        } else {
-
-            int direction = hallway.getDirection();
-            int lShapeDirection = hallway.getlShapeDirection();
-            int rightArmLength = hallway.getLength() - hallway.getMiddleLength();
-            floorEnd = getHallwayEnd(floorMiddle, lShapeDirection, rightArmLength);
-
-            drawLShapeLine(floorStart, floorMiddle, floorEnd, Tileset.FLOOR);
-
-            Position firstWallMiddle = new Position(floorMiddle.getX() - 1,
-                                                    floorMiddle.getY() - 1);
-            Position firstWallStart = minusPosition(floorStart, direction);
-            Position firstWallEnd = minusPosition(floorEnd, lShapeDirection);
-            drawLShapeLine(firstWallStart, firstWallMiddle, firstWallEnd, Tileset.WALL);
-
-            Position secondWallMiddle = new Position(floorMiddle.getX() + 1,
-                                                    floorMiddle.getY() + 1);
-            Position secondWallStart = plusPosition(floorStart, direction);
-            Position secondWallEnd = plusPosition(floorEnd, lShapeDirection);
-            drawLShapeLine(secondWallStart, secondWallMiddle, secondWallEnd, Tileset.WALL);
-        }
+        start = plusPosition(floorStart, direction);
+        end = plusPosition(floorEnd, direction);
+        drawLine(start, end, Tileset.WALL);
     }
+
 
     /**
      * Draw L shape line.
@@ -321,6 +297,27 @@ public class WorldGenerator {
         drawLine(middle, end, tile);
     }
 
+    private void drawLShapeHallway(Hallway hallway) {
+        Room room = roomOfSizeOne(hallway.getMiddle());
+        drawRoom(room);
+        Hallway hallway1 = new Hallway(hallway.getStart(), hallway.getDirection(),
+                hallway.getMiddleLength(), null, hallway.getMiddle());
+        drawDirectHallway(hallway1);
+
+        Hallway hallway2 = new Hallway(hallway.getMiddle(), hallway.getlShapeDirection(),
+                hallway.getLength() - hallway.getMiddleLength(), null,
+                hallway.getEnd());
+        drawDirectHallway(hallway2);
+        drawLShapeLine(hallway.getStart(), hallway.getMiddle(), hallway.getEnd(), Tileset.FLOOR);
+
+    }
+
+    private Room roomOfSizeOne(Position middle) {
+        Position leftBottom = new Position(middle.getX() - 1, middle.getY() - 1);
+        Room room = new Room(leftBottom, 1, 1);
+        return room;
+    }
+
     public TETile[][] generateWorldTest() {
         //Position start = new Position(Game.WIDTH, Game.HEIGHT);
         Position start = new Position(70, 27);
@@ -332,11 +329,16 @@ public class WorldGenerator {
        // fillFloor(start, width, height, Tileset.FLOOR);
         Room room = generateRoom(start, width, height);
 
+        //testGenerateMiddle();
         testLShapeHallwayDrawing();
 
         return world;
     }
 
+    /**
+     * Generate room and hallways.  Room and hallway are connected.
+     * @return world where room and hallway are set.
+     */
     private TETile[][] generateWorld() {
         int numberOfRooms = RANDOM.nextInt(MAX);
 
@@ -362,6 +364,7 @@ public class WorldGenerator {
                 hallway = generateHallway(room);
             }
             drawHallway(hallway);
+
             //Generate the start position of next room linked to current hallway
             start = getNextRoomStart(hallway.getEnd());
         }
@@ -369,15 +372,34 @@ public class WorldGenerator {
         return this.world;
     }
 
+    /**
+     * Draw a hallway according to direct or L shape.
+     * @param hallway The hallway to be drawn.
+     */
+    private void drawHallway(Hallway hallway) {
+        if (hallway.getMiddle() == null) {
+            drawDirectHallway(hallway);
+        } else {
+            drawLShapeHallway(hallway);
+        }
+    }
+
+    /**
+     * Draw a room according to the leftBottom position and
+     * width and height of the room.
+     * @param room
+     */
     private void drawRoom(Room room) {
         Position leftBottom = room.getLeftBottom();
         int width = room.getWidth();
         int height = room.getHeight();
 
-        Position rightBottom = new Position((leftBottom.getX() + width + 1), leftBottom.getY());
-        Position leftUp = new Position(leftBottom.getX(), (leftBottom.getY() + height + 1));
-        Position rightUp = new Position((leftBottom.getX() + width + 1), (leftBottom.getY() + height + 1));
-
+        Position rightBottom = new Position((leftBottom.getX() + width + 1),
+                                    leftBottom.getY());
+        Position leftUp = new Position(leftBottom.getX(),
+                                    (leftBottom.getY() + height + 1));
+        Position rightUp = new Position((leftBottom.getX() + width + 1),
+                                    (leftBottom.getY() + height + 1));
 
         /* Draw bottom wall */
         drawLine(leftBottom, rightBottom, Tileset.WALL);
@@ -405,13 +427,47 @@ public class WorldGenerator {
     private void testLShapeHallwayDrawing() {
         Position start = new Position(20, 10);
         Position middle = new Position(22, 10);
-        Position end = new Position(22, 8);
+        Position end = new Position(22, 12);
         int direction = 1;
         int length = 6;
-        Hallway hallway = new Hallway(start, 1, length, middle, end);
+
+        Hallway hallway = new Hallway(start, direction, length, middle, end);
+        hallway.setlShapeDirection(2);
+        hallway.setMiddleLength(3);
+    //    drawHallway(hallway);
+
+        start = new Position(20, 10);
+        middle = new Position(22, 10);
+        end = new Position(22, 8);
+        direction = 1;
+        length = 6;
+
+        hallway = new Hallway(start, direction, length, middle, end);
         hallway.setlShapeDirection(0);
         hallway.setMiddleLength(3);
-        drawHallway(hallway);
+  //      drawHallway(hallway);
+
+        start = new Position(20, 10);
+        middle = new Position(20, 8);
+        end = new Position(22, 8);
+        direction = 0;
+        length = 6;
+
+        hallway = new Hallway(start, direction, length, middle, end);
+        hallway.setlShapeDirection(1);
+        hallway.setMiddleLength(3);
+//        drawHallway(hallway);
+
+        start = new Position(20, 10);
+        middle = new Position(20, 12);
+        end = new Position(18, 12);
+        direction = 2;
+        length = 6;
+
+        hallway = new Hallway(start, direction, length, middle, end);
+        hallway.setlShapeDirection(3);
+        hallway.setMiddleLength(3);
+  //      drawHallway(hallway);
     }
 
     public static void main(String[] args) {
@@ -422,9 +478,9 @@ public class WorldGenerator {
         TETile[][] worldFrame = new TETile[Game.WIDTH][Game.HEIGHT];
         Game.initializeTheWorld(worldFrame);
         WorldGenerator worldGenerator = new WorldGenerator(seed, worldFrame);
-        worldFrame = worldGenerator.generateWorldTest();
+        //worldFrame = worldGenerator.generateWorldTest();
 
-        //worldFrame = worldGenerator.generateWorld();
+        worldFrame = worldGenerator.generateWorld();
 
         teRenderer.renderFrame(worldFrame);
 

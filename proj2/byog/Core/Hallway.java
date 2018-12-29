@@ -1,5 +1,7 @@
 package byog.Core;
 
+import byog.TileEngine.TETile;
+import byog.TileEngine.Tileset;
 import byog.lab5.Position;
 
 /* The class denoting hallway. A hallway contains three lines:
@@ -77,4 +79,6 @@ public class Hallway {
     void setlShapeDirection(int lShapeDirection) {
         this.lShapeDirection = lShapeDirection;
     }
+
+
 }

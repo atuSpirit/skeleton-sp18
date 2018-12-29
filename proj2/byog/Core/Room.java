@@ -1,5 +1,6 @@
 package byog.Core;
 
+import byog.TileEngine.TETile;
 import byog.lab5.Position;
 
 /* The Room class.  The position of leftBottom.
