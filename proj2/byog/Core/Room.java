@@ -57,4 +57,11 @@ public class Room {
     int getMaxYCoord() {
         return leftBottom.getY() + height + 1;
     }
+
+    @Override
+    public String toString() {
+        String roomStr = String.format("Left corner is %s, width: %d, height: %d",
+                leftBottom.toString(), width, height);
+        return roomStr;
+    }
 }

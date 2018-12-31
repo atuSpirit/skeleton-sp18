@@ -37,7 +37,8 @@ public class WorldGenerator {
      */
     private Room generateRoom(Position start, int width, int length) {
         /* If the room is out of the boundary of canvas, fit it in */
-        if (((start.getX() + width + 1) >= Game.WIDTH) ||
+        if ((start.getX() < 0) || (start.getY() < 0) ||
+                ((start.getX() + width + 1) >= Game.WIDTH) ||
                 ((start.getY() + length + 1) >= Game.HEIGHT)) {
             System.out.println("The room is out of boundary. skip");
             return null;
@@ -64,27 +65,49 @@ public class WorldGenerator {
     private Position getHallwayStart(Room previousRoom, int direction) {
         int xCoord;
         int yCoord;
+        int min, max;
         switch (direction) {
             case 0:
-                xCoord = RandomUtils.uniform(RANDOM, previousRoom.getMinXCoord() + 1,
-                        (previousRoom.getMaxXCoord() - 1));
+                min = previousRoom.getMinXCoord() + 1;
+                max = previousRoom.getMaxXCoord() - 1;
+                if (min == max) {
+                    xCoord = min;
+                } else {
+                    xCoord = min + RANDOM.nextInt(max - min);
+                }
                 yCoord = previousRoom.getMinYCoord();
                 break;
             case 1:
+                min = previousRoom.getMinYCoord() + 1;
+                max = previousRoom.getMaxYCoord() - 1;
                 xCoord = previousRoom.getMaxXCoord();
-                yCoord = RandomUtils.uniform(RANDOM, previousRoom.getMinYCoord() + 1,
-                        (previousRoom.getMaxYCoord() - 1));
+                if (min == max) {
+                    yCoord = min;
+                } else {
+                    yCoord = min + RANDOM.nextInt(max - min);
+                }
                 break;
             case 2:
-                xCoord = RandomUtils.uniform(RANDOM, previousRoom.getMinXCoord() + 1,
-                        (previousRoom.getMaxXCoord() - 1));
+                min = previousRoom.getMinXCoord() + 1;
+                max = previousRoom.getMaxXCoord() - 1;
+                if (min == max) {
+                    xCoord = min;
+                } else {
+                    xCoord = min + RANDOM.nextInt(max - min);
+                }
                 yCoord = previousRoom.getMaxYCoord();
                 break;
             default:
+                min = previousRoom.getMinYCoord() + 1;
+                max = previousRoom.getMaxYCoord() - 1;
                 xCoord = previousRoom.getMinXCoord();
-                yCoord = RandomUtils.uniform(RANDOM, previousRoom.getMinYCoord() + 1,
-                        (previousRoom.getMaxYCoord() - 1));
+                if (min == max) {
+                    yCoord = min;
+                } else {
+                    yCoord = min + RANDOM.nextInt(max - min);
+                }
         }
+
         Position start = new Position(xCoord, yCoord);
 
         return start;
@@ -111,9 +134,11 @@ public class WorldGenerator {
                 xCoord = start.getX() - length + 1;
                 yCoord = start.getY();
         }
-        if ((xCoord < 0) || (xCoord >= Game.WIDTH) || (yCoord < 0) || (yCoord >= Game.HEIGHT)) {
+        /* The range of middle line */
+        if ((xCoord < 1) || (xCoord > (Game.WIDTH - 2)) || (yCoord < 1) || (yCoord > (Game.HEIGHT - 2))) {
             return null;
         }
+
         Position end = new Position(xCoord, yCoord);
         return end;
     }
@@ -126,13 +151,13 @@ public class WorldGenerator {
      */
     private Hallway generateHallway(Room previousRoom) {
         //Randomly choose one side of the room to grow the hallway
-        int direction = RandomUtils.uniform(RANDOM, 4);
+        int direction = RANDOM.nextInt(4);
         Position start = getHallwayStart(previousRoom, direction);
         Position middle = null;
         int LshapeDirection = -1;   //The direction
         Position end = null;
 
-        int length = 1 + RandomUtils.uniform(RANDOM, MAX_HALLWAY_LENGTH);
+        int length = 1 + RANDOM.nextInt(MAX_HALLWAY_LENGTH);
         int middleLength = 0;
         System.out.println("Hallway length: " + length);
 
@@ -143,33 +168,40 @@ public class WorldGenerator {
         if (length < 5) {
             isLShape = 0;
         } else {
-            isLShape = RandomUtils.uniform(RANDOM, 2);
+            isLShape = RANDOM.nextInt(2);
         }
 
-        if (0 == isLShape) {
-            end = getHallwayEnd(start, direction, length);
-        } else {
+        if (isLShape == 1) {
             //generate middle position and L shape.
-            middleLength = RandomUtils.uniform(RANDOM, length);
+            middleLength = RANDOM.nextInt(length);
             /* The two arms of L shape should be at least length 1 */
             if (middleLength < 3 || middleLength > (length - 2)) {
                 middle = null;
             } else {
                 middle = getHallwayEnd(start, direction, middleLength);
-                /* The Lshape direction could be only two possibility according to direction.
-                 * 0 -> 3 or 1
-                 * 1 -> 2 or 0
-                 * 2 -> 1 or 3
-                 * 3 -> 0 or 2
-                 * */
-                int rand = RandomUtils.uniform(RANDOM,1);
+            }
+            if (middle == null) {
+                isLShape = 0;
+            } else {
+            /* The Lshape direction could be only two possibility according to direction.
+             * 0 -> 3 or 1
+             * 1 -> 2 or 0
+             * 2 -> 1 or 3
+             * 3 -> 0 or 2
+             * */
+                int rand = RANDOM.nextInt(1);
                 if (rand == 0) {
                     rand = -1;
                 }
-                LshapeDirection = (4 + direction + rand ) % 4;
+                LshapeDirection = (4 + direction + rand) % 4;
 
                 end = getHallwayEnd(middle, LshapeDirection, (length - middleLength));
             }
+
+        }
+
+        if (0 == isLShape) {
+            end = getHallwayEnd(start, direction, length);
         }
 
         if (end == null) return null;
@@ -343,30 +375,44 @@ public class WorldGenerator {
         int numberOfRooms = RANDOM.nextInt(MAX);
 
         //The start position of the first room
-        int startX = RandomUtils.uniform(RANDOM, Game.WIDTH);
-        int startY = RandomUtils.uniform(RANDOM, Game.HEIGHT);
+        int startX = RANDOM.nextInt(Game.WIDTH);
+        int startY = RANDOM.nextInt(Game.HEIGHT);
         Position start = new Position(startX, startY);
 
         Room room = null;
         Hallway hallway = null;
 
-        for (int i = 0; i < numberOfRooms; i += 1) {
-            //Draw room whose leftBottom corner is at position start
-            while (room == null) {
-                int width = 1 + RandomUtils.uniform(RANDOM, MAX_ROOM_SIZE);
-                int height = 1 + RandomUtils.uniform(RANDOM, MAX_ROOM_SIZE);
-                room = generateRoom(start, width, height);
-            }
-            drawRoom(room);
+        //Draw room whose leftBottom corner is at position start
+        while (room == null) {
+            int width = 1 + RANDOM.nextInt(MAX_ROOM_SIZE);
+            int height = 1 + RANDOM.nextInt(MAX_ROOM_SIZE);
+            room = generateRoom(start, width, height);
+        }
 
+        System.out.println(room.toString());
+        drawRoom(room);
+
+        for (int i = 0; i < numberOfRooms; i += 1) {
             //Draw hallway adjacent to room
-            while (hallway == null) {
+            do {
                 hallway = generateHallway(room);
-            }
+            } while (hallway == null);
+            System.out.println(hallway.toString());
+
             drawHallway(hallway);
 
-            //Generate the start position of next room linked to current hallway
-            start = getNextRoomStart(hallway.getEnd());
+            //Draw room whose leftBottom corner is at position start
+            do {
+                int width = 1 + RANDOM.nextInt(MAX_ROOM_SIZE);
+                int height = 1 + RANDOM.nextInt(MAX_ROOM_SIZE);
+                //Generate the start position of next room linked to current hallway
+                int direction = (hallway.getMiddle() == null) ? hallway.getDirection() : hallway.getlShapeDirection();
+                start = getNextRoomStart(hallway.getEnd(), direction, width, height);
+                room = generateRoom(start, width, height);
+            } while (room == null);
+
+            System.out.println(room.toString());
+            drawRoom(room);
         }
 
         return this.world;
@@ -420,8 +466,28 @@ public class WorldGenerator {
     /* According to the end of previousHallway, generate the
        start of current room.
      */
-    private Position getNextRoomStart(Position hallwayEnd) {
-        return null;
+    private Position getNextRoomStart(Position hallwayEnd, int direction, int width, int height) {
+        int xCoord, yCoord;
+
+        switch (direction) {
+            case 0:
+                xCoord = hallwayEnd.getX() - width + RANDOM.nextInt(2 * width);
+                yCoord = hallwayEnd.getY() - height;
+                break;
+            case 1:
+                xCoord = hallwayEnd.getX();
+                yCoord = hallwayEnd.getY() - height + RANDOM.nextInt(2 * height);
+                break;
+            case 2:
+                xCoord = hallwayEnd.getX() - width + RANDOM.nextInt(2 * width);
+                yCoord = hallwayEnd.getY();
+                break;
+            default:
+                xCoord = hallwayEnd.getX() - width;
+                yCoord = hallwayEnd.getY() - height + RANDOM.nextInt(2 * height);
+
+        }
+        return new Position(xCoord, yCoord);
     }
 
     private void testLShapeHallwayDrawing() {
