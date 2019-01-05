@@ -57,6 +57,7 @@ public class Hallway {
         this.middle = middle;
     }
 
+
     public int getMiddleLength() {
         return middleLength;
     }
@@ -64,6 +65,7 @@ public class Hallway {
     public void setMiddleLength(int middleLength) {
         this.middleLength = middleLength;
     }
+
 
     Position getEnd() {
         return end;
@@ -80,6 +82,17 @@ public class Hallway {
 
     void setlShapeDirection(int lShapeDirection) {
         this.lShapeDirection = lShapeDirection;
+    }
+
+    Hallway getFirstArm() {
+        Hallway firstArm = new Hallway(start, direction, middleLength, null, middle);
+        return firstArm;
+    }
+
+    Hallway getSecondArm() {
+        Hallway secondArm = new Hallway(middle, lShapeDirection,
+                length - middleLength, null, end);
+        return secondArm;
     }
 
     @Override

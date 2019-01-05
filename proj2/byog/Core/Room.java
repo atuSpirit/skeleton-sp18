@@ -60,8 +60,10 @@ public class Room {
 
     @Override
     public String toString() {
-        String roomStr = String.format("Left corner is %s, width: %d, height: %d",
+        String roomStr = String.format("Left corner is %s, width: %d, height: %d\n",
                 leftBottom.toString(), width, height);
+        roomStr += String.format("minX: %d, maxX: %d, minY: %d, maxY: %d",
+                getMinXCoord(), getMaxXCoord(), getMinYCoord(), getMaxYCoord());
         return roomStr;
     }
 }
