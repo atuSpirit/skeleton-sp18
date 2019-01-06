@@ -90,8 +90,8 @@ public class WorldGenerator {
         int minYCoord = room.getMinYCoord();
         int maxYCoord = room.getMaxYCoord();
 
-        Position plusPosition = plusPosition(connectPosition, direction);
-        Position minusPosition = minusPosition(connectPosition, direction);
+        Position plusPosition = Hallway.plusPosition(connectPosition, direction);
+        Position minusPosition = Hallway.minusPosition(connectPosition, direction);
 
         for (int xCoord = minXCoord; xCoord < maxXCoord; xCoord++) {
             for (int yCoord = minYCoord; yCoord < maxYCoord; yCoord++) {
@@ -159,15 +159,15 @@ public class WorldGenerator {
             return true;
         }
 
-        Position start = minusPosition(floorStart, direction);
-        Position end = minusPosition(floorEnd, direction);
+        Position start = Hallway.minusPosition(floorStart, direction);
+        Position end = Hallway.minusPosition(floorEnd, direction);
         overlapped = lineOverlap(start, end);
         if (overlapped == true) {
             return true;
         }
 
-        start = plusPosition(floorStart, direction);
-        end = plusPosition(floorEnd, direction);
+        start = Hallway.plusPosition(floorStart, direction);
+        end = Hallway.plusPosition(floorEnd, direction);
         overlapped = lineOverlap(start, end);
 
         return overlapped;
@@ -359,141 +359,6 @@ public class WorldGenerator {
     }
 
 
-    /*
-     * Fill in the floor as a rectangle.
-     * @param start The start coordinate of the floor
-     * @param width The width of the floor
-     * @param height The height of the floor
-     * @param floorTile  The tile to be filled in the floor
-     */
-    private void fillFloor(Position start, int width, int height, TETile floorTile) {
-        for (int i = 0; i < height; i += 1) {
-            //Fill one row
-            Position end = new Position((start.getX() + width - 1), start.getY());
-            drawLine(start, end, floorTile);
-
-            //Move to next row
-            start = new Position(start.getX(), (start.getY() + 1));
-        }
-    }
-
-    /**
-     * Draw Line from position start to position end.
-     * Start and end should be guaranteed to be in the boundary before
-     * calling this function.
-     */
-    private void drawLine(Position start, Position end, TETile tile) {
-        /*
-        int endX = end.getX() > Game.WIDTH ? Game.WIDTH : end.getX();
-        int endY = end.getY() > Game.HEIGHT ? Game.HEIGHT : end.getY();
-        end = new Position(endX, endY);
-        */
-        int minX = start.getX();
-        int maxX = end.getX();
-        int minY = start.getY();
-        int maxY= end.getY();
-
-        if (end.getX() < minX) {
-            minX = end.getX();
-            maxX = start.getX();
-        }
-
-        if (end.getY() < minY) {
-            minY = end.getY();
-            maxY = start.getY();
-        }
-
-        for (int xCoord = minX; xCoord <= maxX; xCoord += 1) {
-            for (int yCoord = minY; yCoord <= maxY; yCoord += 1) {
-                world[xCoord][yCoord] = TETile.colorVariant(tile, 32, 32, 32, RANDOM);
-            }
-        }
-    }
-
-    /* Helper function to increment hallway position by one line.
-     * The xCoord and yCoord will
-     * increase according to the direction of the hallway */
-    private Position plusPosition(Position position, int direction) {
-        int xCoord = position.getX();
-        int yCoord = position.getY();
-
-        if ((direction == 0) || (direction == 2)) {
-            xCoord++;
-        } else {
-            yCoord--;
-        }
-        return new Position(xCoord, yCoord);
-    }
-
-    /* Helper function to decrease hallway position by one line.
-     * The xCoord and yCoord
-     * will decrease according to the direction of the hallway */
-    private Position minusPosition(Position position, int direction) {
-        int xCoord = position.getX();
-        int yCoord = position.getY();
-
-        if ((direction == 0) || (direction == 2)) {
-            xCoord--;
-        } else {
-            yCoord++;
-        }
-
-        return new Position(xCoord, yCoord);
-    }
-
-    /* Given the hallway object which denoting the middle line,
-     * draw the three lines of hallway.
-     */
-    private void drawDirectHallway(Hallway hallway) {
-        Position floorStart = hallway.getStart();
-        Position floorEnd = hallway.getEnd();
-
-        int direction = hallway.getDirection();
-        drawLine(floorStart, floorEnd, Tileset.FLOOR);
-
-        Position start = minusPosition(floorStart, direction);
-        Position end = minusPosition(floorEnd, direction);
-        drawLine(start, end, Tileset.WALL);
-
-        start = plusPosition(floorStart, direction);
-        end = plusPosition(floorEnd, direction);
-        drawLine(start, end, Tileset.WALL);
-    }
-
-
-    /**
-     * Draw L shape line.
-     * @param start The start position of the L shape
-     * @param middle The position of L corner
-     * @param end The end position of the L line
-     * @param tile The tile to fill the L line
-     */
-    private void drawLShapeLine(Position start, Position middle, Position end, TETile tile) {
-        drawLine(start, middle, tile);
-        drawLine(middle, end, tile);
-    }
-
-    private void drawLShapeHallway(Hallway hallway) {
-        Room room = roomOfSizeOne(hallway.getMiddle());
-        drawRoom(room, null);
-        Hallway hallway1 = new Hallway(hallway.getStart(), hallway.getDirection(),
-                hallway.getMiddleLength(), null, hallway.getMiddle());
-        drawDirectHallway(hallway1);
-
-        Hallway hallway2 = new Hallway(hallway.getMiddle(), hallway.getlShapeDirection(),
-                hallway.getLength() - hallway.getMiddleLength(), null,
-                hallway.getEnd());
-        drawDirectHallway(hallway2);
-        drawLShapeLine(hallway.getStart(), hallway.getMiddle(), hallway.getEnd(), Tileset.FLOOR);
-
-    }
-
-    private Room roomOfSizeOne(Position middle) {
-        Position leftBottom = new Position(middle.getX() - 1, middle.getY() - 1);
-        Room room = new Room(leftBottom, 1, 1);
-        return room;
-    }
-
     public TETile[][] generateWorldTest() {
         //Position start = new Position(Game.WIDTH, Game.HEIGHT);
         Position start = new Position(70, 27);
@@ -516,6 +381,7 @@ public class WorldGenerator {
      * @return world where room and hallway are set.
      */
     private TETile[][] generateWorld() {
+        Drawer drawer = new Drawer(this.world, RANDOM);
         int numberOfRooms = 1 + RANDOM.nextInt(MAX);
         /* To avoid the case no valid room or hallway could be generated. If the failed
            time exceed max_failed_times, generate a new start.
@@ -538,7 +404,7 @@ public class WorldGenerator {
         }
 
         //System.out.println(room.toString());
-        drawRoom(room, null);
+        drawer.drawRoom(room, null);
         roomList.add(room);
 
         int roomIndex = 1;
@@ -549,13 +415,15 @@ public class WorldGenerator {
              */
             if (hallway == null) {
                 break;
+            } else {
+                drawer.drawHallway(hallway);
             }
 
             room = generateRoom(hallway);
 
             if (room != null) {
                 //System.out.println(room.toString());
-                drawRoom(room, hallway.getEnd());
+                drawer.drawRoom(room, hallway.getEnd());
                 roomList.add(room);
                 roomIndex++;
             } else {
@@ -592,8 +460,6 @@ public class WorldGenerator {
             Room room = chooseARoomAsStart();
             hallway = generateHallwayTrial(room);
         } while (hallway == null);
-
-        drawHallway(hallway);
     //    System.out.println(hallway.toString());
 
         return hallway;
@@ -671,57 +537,6 @@ public class WorldGenerator {
     /* Seal the end of the hallway by setting the end position to Wall.*/
     private void closeHallwayEnd(Position end) {
         world[end.getX()][end.getY()] = Tileset.WALL;
-    }
-
-    /**
-     * Draw a hallway according to direct or L shape.
-     * @param hallway The hallway to be drawn.
-     */
-    private void drawHallway(Hallway hallway) {
-        if (hallway.getMiddle() == null) {
-            drawDirectHallway(hallway);
-        } else {
-            drawLShapeHallway(hallway);
-        }
-    }
-
-    /**
-     * Draw a room according to the leftBottom position and
-     * width and height of the room.
-     * @param room the room to drawn
-     * @param connectPosition the position a room is connected to previous hallway.
-     *                        If there is no, set the parameter to null
-     */
-    private void drawRoom(Room room, Position connectPosition) {
-        Position leftBottom = room.getLeftBottom();
-        int width = room.getWidth();
-        int height = room.getHeight();
-
-        Position rightBottom = new Position((leftBottom.getX() + width + 1),
-                leftBottom.getY());
-        Position leftUp = new Position(leftBottom.getX(),
-                (leftBottom.getY() + height + 1));
-        Position rightUp = new Position((leftBottom.getX() + width + 1),
-                (leftBottom.getY() + height + 1));
-
-        /* Draw bottom wall */
-        drawLine(leftBottom, rightBottom, Tileset.WALL);
-
-        /* Draw left wall */
-        drawLine(leftBottom, leftUp, Tileset.WALL);
-
-        /* Draw right wall */
-        drawLine(rightBottom, rightUp, Tileset.WALL);
-
-        /* Draw the top wall */
-        drawLine(leftUp, rightUp, Tileset.WALL);
-
-        fillFloor(new Position((leftBottom.getX() + 1), (leftBottom.getY() + 1)), width, height, Tileset.FLOOR);
-
-        //Reset the connect position to floor
-        if (connectPosition != null) {
-            world[connectPosition.getX()][connectPosition.getY()] = Tileset.FLOOR;
-        }
     }
 
     /**

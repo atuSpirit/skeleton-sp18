@@ -95,6 +95,37 @@ public class Hallway {
         return secondArm;
     }
 
+    /* Helper function to increment hallway position by one line.
+     * The xCoord and yCoord will
+     * increase according to the direction of the hallway */
+    static Position plusPosition(Position position, int direction) {
+        int xCoord = position.getX();
+        int yCoord = position.getY();
+
+        if ((direction == 0) || (direction == 2)) {
+            xCoord++;
+        } else {
+            yCoord--;
+        }
+        return new Position(xCoord, yCoord);
+    }
+
+    /* Helper function to decrease hallway position by one line.
+     * The xCoord and yCoord
+     * will decrease according to the direction of the hallway */
+    static Position minusPosition(Position position, int direction) {
+        int xCoord = position.getX();
+        int yCoord = position.getY();
+
+        if ((direction == 0) || (direction == 2)) {
+            xCoord--;
+        } else {
+            yCoord++;
+        }
+
+        return new Position(xCoord, yCoord);
+    }
+
     @Override
     public String toString() {
         String hallway = null;
