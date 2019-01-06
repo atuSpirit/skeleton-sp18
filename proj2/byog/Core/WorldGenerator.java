@@ -28,6 +28,7 @@ public class WorldGenerator {
 
     private TETile[][] world;
     private List<Room> roomList;
+    private Position doorPosition;
 
 
     public WorldGenerator(long seed, TETile[][] world) {
@@ -37,24 +38,39 @@ public class WorldGenerator {
         roomList = new ArrayList<>();
     }
 
-    /**
-     * Draw a rectangle room starting from start position with given
-     * width and length.
-     * @param start The leftBottom corner of the room.
-     * @param width The width of the room
-     * @param length The length of the room
-     * @return room The room generated.
-     */
-    private Room generateRoom(Position start, int width, int length) {
+    private Room generateARoom(Position start, int width, int height) {
         /* If the room is out of the boundary of canvas, fit it in */
         if ((start.getX() < 0) || (start.getY() < 0) ||
                 ((start.getX() + width + 1) >= Game.WIDTH) ||
-                ((start.getY() + length + 1) >= Game.HEIGHT)) {
+                ((start.getY() + height + 1) >= Game.HEIGHT)) {
 //            System.out.println("The room is out of boundary. skip");
             return null;
         }
 
-        Room room = new Room(start, width, length);
+        Room room = new Room(start, width, height);
+
+        return room;
+    }
+
+    /**
+     * One trial to generate a rectangle room starting from
+     * start position with given width and height.
+     * @param hallway The hallway previous to the room
+     * @param width The width of the room
+     * @param height The height of the room
+     * @return room The room generated
+     */
+    private Room generateRoomTrial(Hallway hallway, int width, int height) {
+        //Generate the start position of next room linked to current hallway
+        int direction = (hallway.getMiddle() == null) ? hallway.getDirection() : hallway.getlShapeDirection();
+        Position start = getNextRoomStart(hallway.getEnd(), direction, width, height);
+
+        Room room = generateARoom(start, width, height);
+
+        if (room != null && hasOverlap(room, hallway.getEnd(), direction)) {
+    //        System.out.println("Overlapped room: " + room.toString());
+            room = null;
+        }
 
         return room;
     }
@@ -259,13 +275,15 @@ public class WorldGenerator {
     }
 
     /**
-     * Generate a hallway with random start position and end position.
+     * One try to generate a hallway with random start position and end position.
      * If start and end are not in the same row or column, the hallway
      * should turn. The minimal length of a hallway is 2. If the length is 1,
      * it only open a dot on the wall of a room.
      * @param previousRoom The room adjacent to the start of the hallway.
+     * @return a hallway or null if the hallway generated is out of boundary or
+     *         overlapped with others.
      */
-    private Hallway generateHallway(Room previousRoom) {
+    private Hallway generateHallwayTrial(Room previousRoom) {
         //Randomly choose one side of the room to grow the hallway
         int direction = RANDOM.nextInt(4);
         Position start = getHallwayStart(previousRoom, direction);
@@ -485,7 +503,7 @@ public class WorldGenerator {
         TETile tile = Tileset.WALL;
        // drawLine(start, end, tile);
        // fillFloor(start, width, height, Tileset.FLOOR);
-        Room room = generateRoom(start, width, height);
+        Room room = generateARoom(start, width, height);
 
         //testGenerateMiddle();
         testLShapeHallwayDrawing();
@@ -502,92 +520,144 @@ public class WorldGenerator {
         /* To avoid the case no valid room or hallway could be generated. If the failed
            time exceed max_failed_times, generate a new start.
         */
+        System.out.println("The number of room generated: " + numberOfRooms);
         boolean restart = false;
-
-        //The start position of the first room
-        int startX = RANDOM.nextInt(Game.WIDTH);
-        int startY = RANDOM.nextInt(Game.HEIGHT);
-        Position start = new Position(startX, startY);
 
         Room room = null;
         Hallway hallway = null;
 
-        //Draw room whose leftBottom corner is at position start
+        /* Generate the first room */
         while (room == null) {
+            //The start position of the first room
+            int startX = RANDOM.nextInt(Game.WIDTH);
+            int startY = RANDOM.nextInt(Game.HEIGHT);
+            Position start = new Position(startX, startY);
             int width = 1 + RANDOM.nextInt(MAX_ROOM_SIZE);
             int height = 1 + RANDOM.nextInt(MAX_ROOM_SIZE);
-            room = generateRoom(start, width, height);
+            room = generateARoom(start, width, height);
         }
 
-        System.out.println(room.toString());
+        //System.out.println(room.toString());
         drawRoom(room, null);
         roomList.add(room);
 
         int roomIndex = 1;
         while (roomIndex < numberOfRooms) {
-            //times failed to generate a non overlapping room or hallway
-            int failed = -1;
-            /* Choose a room from existing rooms and generate a hallway */
-            do {
+            hallway = generateHallway();
+            /* If no hallway not overlapping with others could not be
+               generated, stop.
+             */
+            if (hallway == null) {
+                break;
+            }
+
+            room = generateRoom(hallway);
+
+            if (room != null) {
+                //System.out.println(room.toString());
+                drawRoom(room, hallway.getEnd());
+                roomList.add(room);
+                roomIndex++;
+            } else {
+                /* If no room not overlapping with others could not be
+                   generated, stop generating room. Go back to generate
+                   another hallway starting from another room.
+                 */
+                closeHallwayEnd(hallway.getEnd());
+            }
+        }
+
+        setDoor();
+
+        return this.world;
+    }
+
+    /**
+     * Generate a hallway starting from a random chosen room from
+     * the existing room list.
+     * @return the hallway generated or null if no hallway not
+     *         overlapping with others could not be generated with MAX trials.
+     */
+    private Hallway generateHallway() {
+        Hallway hallway;
+
+        //times failed to generate a non overlapping room or hallway
+        int failed = -1;
+        /* Choose a room from existing rooms and generate a hallway */
+        do {
+            failed++;
+            if (failed > MAX) {
+                return null;
+            }
+            Room room = chooseARoomAsStart();
+            hallway = generateHallwayTrial(room);
+        } while (hallway == null);
+
+        drawHallway(hallway);
+    //    System.out.println(hallway.toString());
+
+        return hallway;
+    }
+
+    /**
+     * Generate a room connected to a given hallway.
+     * @param hallway The hallway before the room
+     * @return the room or null if no room not overlapping with
+     *         others could be generated with no more than
+     *         MAX_FAILED_TIMES trials.
+     */
+    private Room generateRoom(Hallway hallway) {
+        Room room;
+        /* Draw a room adjacent to the end of the hallway */
+        /* The times failed to generate a room in boundary and with no overlap. */
+        int failed = 0;
+        //Draw room whose leftBottom corner is at position start
+        do {
+            int width = 1 + RANDOM.nextInt(MAX_ROOM_SIZE);
+            int height = 1 + RANDOM.nextInt(MAX_ROOM_SIZE);
+
+            room = generateRoomTrial(hallway, width, height);
+
+            if (room == null) {
                 failed++;
-                if (failed > numberOfRooms) {
-                    return this.world;
-                }
-                room = chooseARoomAsStart();
-                hallway = generateHallway(room);
-            } while (hallway == null);
-
-            drawHallway(hallway);
-            System.out.println(hallway.toString());
-
-
-            /* Draw a room adjacent to the end of the hallway */
-            /* The times failed to generate a room in boundary and with no overlap. */
-            failed = 0;
-            //Draw room whose leftBottom corner is at position start
-            do {
-                int width = 1 + RANDOM.nextInt(MAX_ROOM_SIZE);
-                int height = 1 + RANDOM.nextInt(MAX_ROOM_SIZE);
-
-                //Generate the start position of next room linked to current hallway
-                int direction = (hallway.getMiddle() == null) ? hallway.getDirection() : hallway.getlShapeDirection();
-                start = getNextRoomStart(hallway.getEnd(), direction, width, height);
-                room = generateRoom(start, width, height);
-
-                /* If the generated room is overlapped with existing room or hallway,
-                    it will be discarded.
-                */
-                if (room == null) {
-                    failed++;
-                } else if (hasOverlap(room, hallway.getEnd(), direction)) {
-//                    System.out.println("The generated room " + room.toString() +
-//                            " is overlapped, discarded.");
-                    room = null;
-                    failed++;
-                }
-
                 /* To avoid the case no valid room could be generated. If the failed
                    time exceed max_failed_times, generate a new start.
                  */
                 if (failed > MAX_FAILED_TIMES) {
                     break;
                 }
-            } while (room == null);
-
-            if (room != null) {
-                System.out.println(room.toString());
-                drawRoom(room, hallway.getEnd());
-                roomList.add(room);
-                roomIndex++;
-                System.out.println("roomIndex: " + roomIndex);
-            } else {
-                closeHallwayEnd(hallway.getEnd());
             }
+        } while (room == null);
 
+        return room;
+    }
 
+    private void setDoor() {
+        Room room = chooseARoomAsStart();
+        int direction = RANDOM.nextInt(4);
+        int xCoord, yCoord;
+        switch (direction) {
+            case 0:
+                xCoord = room.getMinXCoord() + 1 + RANDOM.nextInt(room.getWidth());
+                yCoord = room.getMinYCoord();
+                break;
+            case 1:
+                xCoord = room.getMaxXCoord();
+                yCoord = room.getMinYCoord() + 1 + RANDOM.nextInt(room.getHeight());
+                break;
+            case 2:
+                xCoord = room.getMinXCoord() + 1 + RANDOM.nextInt(room.getWidth());
+                yCoord = room.getMaxYCoord();
+                break;
+            default:
+                xCoord = room.getMinXCoord();
+                yCoord = room.getMinYCoord() + 1 + RANDOM.nextInt(room.getHeight());
         }
+        
+        this.doorPosition = new Position(xCoord, yCoord);
 
-        return this.world;
+        System.out.println("The door position is " + this.doorPosition.toString());
+        this.world[xCoord][yCoord] = Tileset.LOCKED_DOOR;
     }
 
     /* Randomly choose a room as new start to generate new hallway.*/

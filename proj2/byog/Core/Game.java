@@ -7,7 +7,7 @@ import byog.TileEngine.Tileset;
 public class Game {
     TERenderer ter = new TERenderer();
     /* Feel free to change the width and height. */
-    public static final int WIDTH = 80;
+    public static final int WIDTH = 50;
     public static final int HEIGHT = 30;
 
     /**
