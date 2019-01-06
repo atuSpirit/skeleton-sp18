@@ -66,6 +66,7 @@ public class Drawer {
         }
     }
 
+
     /**
      * Draw Line from position start to position end.
      * Start and end should be guaranteed to be in the boundary before
@@ -117,8 +118,10 @@ public class Drawer {
         }
     }
 
-    /* Given the hallway object which denoting the middle line,
+    /**
+     * Given the hallway object which denoting the middle line,
      * draw the three lines of hallway.
+     * @param hallway a direct hallway whose middle field should be null
      */
     private void drawDirectHallway(Hallway hallway) {
         Position floorStart = hallway.getStart();
@@ -138,17 +141,10 @@ public class Drawer {
 
 
     /**
-     * Draw L shape line.
-     * @param start The start position of the L shape
-     * @param middle The position of L corner
-     * @param end The end position of the L line
-     * @param tile The tile to fill the L line
+     * Draw the L shape hallway.
+     * @param hallway a L shape hallway to be drawn. The middle field
+     *                of the hallway should not be null.
      */
-    private void drawLShapeLine(Position start, Position middle, Position end, TETile tile) {
-        drawLine(start, middle, tile);
-        drawLine(middle, end, tile);
-    }
-
     private void drawLShapeHallway(Hallway hallway) {
         Room room = roomOfSizeOne(hallway.getMiddle());
         drawRoom(room, null);
@@ -164,12 +160,30 @@ public class Drawer {
 
     }
 
+    /**
+     * Draw L shape line.
+     * @param start The start position of the L shape
+     * @param middle The position of L corner
+     * @param end The end position of the L line
+     * @param tile The tile to fill the L line
+     */
+    private void drawLShapeLine(Position start, Position middle, Position end, TETile tile) {
+        drawLine(start, middle, tile);
+        drawLine(middle, end, tile);
+    }
+
+    /* Generate a room of size one at given position.
+       Used as a helper function to draw the corner of a
+       L shape hallway.
+     */
     private Room roomOfSizeOne(Position middle) {
         Position leftBottom = new Position(middle.getX() - 1, middle.getY() - 1);
         Room room = new Room(leftBottom, 1, 1);
         return room;
     }
 
-
-
+    /* Draw a position with given TETile */
+    void drawPoint(Position position, TETile tile) {
+        this.world[position.getX()][position.getY()] = tile;
+    }
 }
